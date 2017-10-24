@@ -231,3 +231,144 @@ top, and then you should see something like this:
 
 .. figure:: ../res/aws-console-versioning-enabled.png
    :alt: AWS Console showing versioning enabled
+
+Microsoft Azure as a data backend
+---------------------------------
+
+From the MS Azure Console
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+From your Storage Account dashboard, create a container where you will host your
+data for this new location constraint.
+
+You will also need to get one of your Storage Account Access Keys, and to
+provide it to CloudServer.
+This can be found from your Storage Account dashboard, under "Settings, then
+"Access keys".
+
+In this example, our container will be named ``zenkontainer``, and will belong
+to the ``zenkomeetups`` Storage Account.
+
+From the CloudServer repository
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+locationConfig.json
+^^^^^^^^^^^^^^^^^^^
+
+Edit this file to add a new location constraint. This location constraint will
+contain the information for the MS Azure container to which you will be writing
+your data whenever you create a CloudServer bucket in this location.
+There are a few configurable options here:
+
+- :code:`type` : set to :code:`azure` to indicate this location constraint is
+  writing data to MS Azure;
+- :code:`legacyAwsBehavior` : set to :code:`true` to indicate this region should
+  behave like AWS S3 :code:`us-east-1` region, set to :code:`false` to indicate
+  this region should behave like any other AWS S3 region (in the case of MS Azure
+  hosted data, this is mostly relevant for the format of errors);
+- :code:`azureBlobEndpoint` : set to your storage account's endpoint, usually
+  :code:`https://{{storageAccountName}}.blob.core.windows.name`;
+- :code:`azureContainerName` : set to an *existing container* in your MS Azure
+  storage account; this is the container in which your data will be stored for
+  this location constraint;
+- :code:`bucketMatch` : set to :code:`true` if you want your object name to be
+  the same in your local bucket and your MS Azure container; set to
+  :code:`false` if you want your object name to be of the form
+  :code:`{{localBucketName}}/{{objectname}}` in your MS Azure container ;
+- :code:`azureStorageAccountName` : the MS Azure Storage Account to which your
+  container belongs;
+- :code:`azureStorageAccessKey` : one of the AccessKeys associated to the above
+  defined MS Azure Storage Account.
+
+.. code:: json
+
+    (...)
+    "azure-test": {
+	"type": "azure",
+        "legacyAwsBehavior": false,
+        "details": {
+          "azureBlobEndpoint": "https://zenkomeetups.blob.core.windows.net/",
+	  "bucketMatch": true,
+	  "azureStorageAccountName": "zenkomeetups",
+	  "azureStorageAccessKey": "auhyDo8izbuU4aZGdhxnWh0ODKFP3IWjsN1UfFaoqFbnYzPj9bxeCVAzTIcgzdgqomDKx6QS+8ov8PYCON0Nxw=="
+	}
+    },
+    (...)
+
+.. WARNING::
+   If you set :code:`bucketMatch` to :code:`true`, we strongly advise that you
+   only have one local bucket per MS Azure location.
+   Without :code:`bucketMatch` set to :code:`false`, your object names in your
+   MS Azure container will not be prefixed with your Cloud Server bucket name.
+   This means that if you put an object :code:`foo` to your CloudServer bucket
+   :code:`zenko1` and you then put a different :code:`foo` to your CloudServer
+   bucket :code:`zenko2` and both :code:`zenko1` and :code:`zenko2` point to the
+   same MS Azure container, the second :code:`foo` will overwrite the first
+   :code:`foo`.
+
+Start the server with the ability to write to MS Azure
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Inside the repository, once all the files have been edited, you should be able
+to start the server and start writing data to MS Azure through CloudServer.
+
+.. code:: shell
+
+   # Start the server locally
+   $> S3DATA=multiple npm start
+
+Run the server as a docker container with the ability to write to MS Azure
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Mount all the files that have been edited to override defaults, and do a
+standard Docker run; then you can start writing data to MS Azure through
+CloudServer.
+
+.. code:: shell
+
+   # Start the server in a Docker container
+   $> sudo docker run -d --name CloudServer \
+   -v $(pwd)/data:/usr/src/app/localData \
+   -v $(pwd)/metadata:/usr/src/app/localMetadata \
+   -v $(pwd)/locationConfig.json:/usr/src/app/locationConfig.json \
+   -v $(pwd)/conf/authdata.json:/usr/src/app/conf/authdata.json \
+   -e S3DATA=multiple -e ENDPOINT=http://localhost -p 8000:8000
+   -d scality/s3server
+
+Testing: put an object to MS Azure using CloudServer
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In order to start testing pushing to MS Azure, you will need to create a local
+bucket in the MS Azure region - this local bucket will only store the metadata
+locally, while both the data and any user metadata (:code:`x-amz-meta` headers
+sent with a PUT object, and tags) will be stored on MS Azure.
+This example is based on all our previous steps.
+
+.. code:: shell
+
+   # Create a local bucket storing data in MS Azure
+   $> s3cmd --host=127.0.0.1:8000 mb s3://zenkontainer --region=azure-test
+   # Put an object to MS Azure, and store the metadata locally
+   $> s3cmd --host=127.0.0.1:8000 put /etc/hosts s3://zenkontainer/testput
+    upload: '/etc/hosts' -> 's3://zenkontainer/testput'  [1 of 1]
+     330 of 330   100% in    0s   380.87 B/s  done
+   # List locally to check you have the metadata
+   $> s3cmd --host=127.0.0.1:8000 ls s3://zenkobucket
+    2017-10-24 14:38       330   s3://zenkontainer/testput
+
+Then, from the MS Azure Console, if you go into your container, you should see
+your newly uploaded object:
+
+.. figure:: ../res/azure-console-successful-put.png
+   :alt: MS Azure Console upload example
+
+Troubleshooting
+~~~~~~~~~~~~~~~
+
+Make sure your :code:`~/.s3cfg` file has credentials matching your local
+CloudServer credentials defined in :code:`conf/authdata.json`. By default, the
+access key is :code:`accessKey1` and the secret key is :code:`verySecretKey1`.
+For more informations, refer to our template `~/.s3cfg <./CLIENTS/#s3cmd>`__ .
+
+Pre existing objects in your MS Azure container can unfortunately not be
+accessed by CloudServer at this time.
