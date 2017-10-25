@@ -10,7 +10,7 @@ const locConstraints = Object.keys(config.locationConstraints);
 
 describe('Healthcheck response', () => {
     it('should return no error', done => {
-        clientCheck(log, err => {
+        clientCheck(true, log, err => {
             assert.strictEqual(err, null,
                 `Expected success but got error ${err}`);
             done();
@@ -18,7 +18,7 @@ describe('Healthcheck response', () => {
     });
     it('should return result for every location constraint in ' +
     'locationConfig and at least one of every external locations', done => {
-        clientCheck(log, (err, results) => {
+        clientCheck(true, log, (err, results) => {
             locConstraints.forEach(constraint => {
                 if (Object.keys(results).indexOf(constraint) === -1) {
                     const locationType = config
