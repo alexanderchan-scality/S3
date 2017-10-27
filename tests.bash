@@ -166,7 +166,7 @@ then
 
   killandsleep 8000
 
-  S3BACKEND=mem ENABLE_LOCAL_CACHE=true npm start > $CIRCLE_ARTIFACTS/server_mem_healthchecks.txt & bash wait_for_local_port.bash 8000 40 && ENABLE_LOCAL_CACHE=true npm run healthchecks
+  S3BACKEND=mem ENABLE_LOCAL_CACHE=true npm start > $CIRCLE_ARTIFACTS/server_mem_healthchecks.txt & bash wait_for_local_port.bash 8000 40 && ENABLE_LOCAL_CACHE=true npm run ft_healthchecks
 
   killandsleep 8000
 
