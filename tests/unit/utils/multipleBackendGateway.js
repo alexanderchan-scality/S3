@@ -1,6 +1,6 @@
 const assert = require('assert');
 const { checkExternalBackend } = require('../../../lib/data/external/utils');
-// const { externalBackendHealthCheckInteval } = require('../../../constants');
+const { externalBackendHealthCheckInteval } = require('../../../constants');
 const awsLocations = [
     'aws-test',
 ];
@@ -44,18 +44,19 @@ describe('Testing _checkExternalBackend', function describeF() {
         });
     });
 
-    // it('should refreshed response after a minute', done => {
-    //     const clients = getClients(false);
-    //     return setTimeout(() => {
-    //         console.log('TIMEOUT!!!');
-    //         checkExternalBackend(clients, awsLocations, 'aws_s3',
-    //         (err, res) => {
-    //             if (err) {
-    //                 return done(err);
-    //             }
-    //             assert.strictEqual(res['aws-test'], statusFailure);
-    //             return done();
-    //         });
-    //     }, 50000);
-    // });
+    it.only('should refreshed response after a minute', done => {
+        const clients = getClients(false);
+        console.log('TIMEOUT11!!!');
+        return setTimeout(() => {
+            console.log('TIMEOUT222!!!');
+            checkExternalBackend(clients, awsLocations, 'aws_s3',
+            (err, res) => {
+                if (err) {
+                    return done(err);
+                }
+                assert.strictEqual(res['aws-test'], statusFailure);
+                return done();
+            });
+        }, externalBackendHealthCheckInteval);
+    });
 });
