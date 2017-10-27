@@ -117,7 +117,7 @@ describe('locationConstraintAssert', () => {
         },
         '/should not throw for a valid azure location constraint/');
     });
-    it('should throw error for if type is azure and azureContainerName is ' +
+    it('should throw error if type is azure and azureContainerName is ' +
     'not specified', () => {
         const usEast1 = new LocationConstraint();
         const locationConstraint = new LocationConstraint('azure', true, {
@@ -134,7 +134,7 @@ describe('locationConstraintAssert', () => {
         '/bad location constraint: ' +
         '"azurefaketest" azureContainerName must be defined/');
     });
-    it('should throw error for if type is azure and azureContainerName is ' +
+    it('should throw error if type is azure and azureContainerName is ' +
     'invalid value', () => {
         const usEast1 = new LocationConstraint();
         const locationConstraint = new LocationConstraint('azure', true, {
@@ -152,7 +152,7 @@ describe('locationConstraintAssert', () => {
         '/bad location constraint: "azurefaketest" ' +
         'azureContainerName is an invalid container name/');
     });
-    it('should throw error for if type is azure and azureStorageAccountName ' +
+    it('should throw error if type is azure and azureStorageAccountName ' +
     'is not specified', () => {
         const usEast1 = new LocationConstraint();
         const locationConstraint = new LocationConstraint('azure', true, {
@@ -170,7 +170,7 @@ describe('locationConstraintAssert', () => {
         'azureStorageAccountName must be set in locationConfig ' +
         'or environment variable/');
     });
-    it('should throw error for if type is azure and azureStorageAccountName ' +
+    it('should throw error if type is azure and azureStorageAccountName ' +
     'is invalid value', () => {
         const usEast1 = new LocationConstraint();
         const locationConstraint = new LocationConstraint('azure', true, {
@@ -188,7 +188,7 @@ describe('locationConstraintAssert', () => {
         '/bad location constraint: "azurefaketest" ' +
         'azureStorageAccountName "invalid!!!" is an invalid value/');
     });
-    it('should throw error for if type is azure and azureStorageAccessKey ' +
+    it('should throw error if type is azure and azureStorageAccessKey ' +
     'is not specified', () => {
         const usEast1 = new LocationConstraint();
         const locationConstraint = new LocationConstraint('azure', true, {
@@ -206,7 +206,7 @@ describe('locationConstraintAssert', () => {
         'azureStorageAccessKey must be set in locationConfig ' +
         'or environment variable/');
     });
-    it('should throw error for if type is azure and azureStorageAccessKey ' +
+    it('should throw error if type is azure and azureStorageAccessKey ' +
     'is not a valid base64 string', () => {
         const usEast1 = new LocationConstraint();
         const locationConstraint = new LocationConstraint('azure', true, {
