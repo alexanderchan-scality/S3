@@ -20,7 +20,7 @@ const azureLocation2 = 'azuretest2';
 const azureLocationMismatch = 'azuretestmismatch';
 const versioningEnabled = { Status: 'Enabled' };
 const versioningSuspended = { Status: 'Suspended' };
-const awsTimeout = 10000;
+const awsTimeout = 30000;
 let describeSkipIfNotMultiple = describe.skip;
 let awsS3;
 let awsBucket;

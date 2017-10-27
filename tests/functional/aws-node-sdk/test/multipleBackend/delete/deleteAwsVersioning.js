@@ -102,7 +102,7 @@ function _getAssertDeleted(s3, params, cb) {
 function _awsGetAssertDeleted(params, cb) {
     const { key, versionId, errorCode } = params;
     const getObject = awsS3.getObject.bind(awsS3);
-    return setTimeout(getObject, 10000, { Bucket: awsBucket, Key: key,
+    return setTimeout(getObject, 30000, { Bucket: awsBucket, Key: key,
         VersionId: versionId }, err => {
             assert.strictEqual(err.code, errorCode);
             assert.strictEqual(err.statusCode, 404);
@@ -112,7 +112,7 @@ function _awsGetAssertDeleted(params, cb) {
 
 describeSkipIfNotMultiple('AWS backend delete object w. versioning: ' +
     'using object location constraint', function testSuite() {
-    this.timeout(30000);
+    this.timeout(120000);
     withV4(sigCfg => {
         let bucketUtil;
         let s3;
@@ -278,7 +278,6 @@ describeSkipIfNotMultiple('AWS backend delete object w. versioning: ' +
         'existing null version that is not the latest version in s3 metadata,' +
         ' but the data of the first null version will remain in AWS',
         function itF(done) {
-            this.timeout(60000);
             const key = `somekey-${Date.now()}`;
             const data = [undefined, 'data1'];
             async.waterfall([
@@ -481,7 +480,7 @@ describeSkipIfNotMultiple('AWS backend delete object w. versioning: ' +
 
 describeSkipIfNotMultiple('AWS backend delete object w. versioning: ' +
     'using bucket location constraint', function testSuite() {
-    this.timeout(30000);
+    this.timeout(120000);
     const createBucketParams = {
         Bucket: bucket,
         CreateBucketConfiguration: {
