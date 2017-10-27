@@ -112,9 +112,8 @@ const constants = {
     /* eslint-enable camelcase */
     mpuMDStoredOnS3Backend: { azure: true },
     azureAccountNameRegex: /^[a-z0-9]{3,24}$/,
-    azureAccessKeyRegex:
-        new RegExp('^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==' +
-        '|[A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{4})$'),
+    base64Regex: new RegExp('^(?:[A-Za-z0-9+/]{4})*' +
+        '(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$'),
 };
 
 module.exports = constants;
