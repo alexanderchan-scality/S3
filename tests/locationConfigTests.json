@@ -76,7 +76,7 @@
         "legacyAwsBehavior": true,
         "details": {
             "azureStorageAccountName": "fakeaccountname",
-            "azureStorageAccessKey": "Fake00Key123",
+            "azureStorageAccessKey": "Fake00Key001",
             "bucketMatch": true,
             "azureContainerName": "s3test"
         }
@@ -85,8 +85,8 @@
         "type": "azure",
         "legacyAwsBehavior": true,
         "details": {
-            "azureStorageAccountName": "fakeaccountname",
-            "azureStorageAccessKey": "Fake00Key123",
+            "azureStorageAccountName": "fakeaccountname2",
+            "azureStorageAccessKey": "Fake00Key002",
             "bucketMatch": true,
             "azureContainerName": "s3test2"
         }
@@ -96,7 +96,7 @@
         "legacyAwsBehavior": true,
         "details": {
             "azureStorageAccountName": "fakeaccountname",
-            "azureStorageAccessKey": "Fake00Key123",
+            "azureStorageAccessKey": "Fake00Key001",
             "bucketMatch": false,
             "azureContainerName": "s3test"
         }
