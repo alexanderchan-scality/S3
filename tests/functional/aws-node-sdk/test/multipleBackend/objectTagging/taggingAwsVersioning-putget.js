@@ -11,14 +11,14 @@ const {
     awsBucket,
     awsLocation,
     enableVersioning,
-    putNullVersionsToAws,
-    putVersionsToAws,
-    awsGetLatestVerId,
+    putNullVersionsToBknd,
+    putVersionsToBknd,
+    getLatestVerId,
     tagging,
 } = require('../utils');
 
 const { putTaggingAndAssert, getTaggingAndAssert, delTaggingAndAssert,
-    awsGetAssertTags } = tagging;
+    getAssertTAgs } = tagging;
 const someBody = 'teststring';
 
 describeSkipIfNotMultiple('AWS backend object put/get tagging with versioning',
@@ -53,7 +53,7 @@ function testSuite() {
                     expectedVersionId: false }, next),
                 (versionId, next) => getTaggingAndAssert(s3, { bucket, key,
                     expectedTags: tags, expectedVersionId: false }, next),
-                (versionId, next) => awsGetAssertTags({ key,
+                (versionId, next) => getAssertTAgs({ key,
                     expectedTags: tags }, next),
             ], done);
         });
@@ -68,7 +68,7 @@ function testSuite() {
                 (versionId, next) => getTaggingAndAssert(s3, { bucket, key,
                     versionId: 'null', expectedTags: tags,
                     expectedVersionId: false }, next),
-                (versionId, next) => awsGetAssertTags({ key,
+                (versionId, next) => getAssertTAgs({ key,
                     expectedTags: tags }, next),
             ], done);
         });
@@ -78,12 +78,12 @@ function testSuite() {
             const data = [undefined, 'test1', 'test2'];
             const key = `somekey-${Date.now()}`;
             async.waterfall([
-                next => putNullVersionsToAws(s3, bucket, key, data, next),
+                next => putNullVersionsToBknd(s3, bucket, key, data, next),
                 (versionIds, next) => putTaggingAndAssert(s3, { bucket, key,
                     tags, expectedVersionId: 'null' }, next),
                 (versionId, next) => getTaggingAndAssert(s3, { bucket, key,
                     expectedTags: tags, expectedVersionId: 'null' }, next),
-                (versionId, next) => awsGetAssertTags({ key,
+                (versionId, next) => getAssertTAgs({ key,
                     expectedTags: tags }, next),
             ], done);
         });
@@ -92,14 +92,14 @@ function testSuite() {
         'version (null)', done => {
             const key = `somekey-${Date.now()}`;
             async.waterfall([
-                next => putNullVersionsToAws(s3, bucket, key, [undefined],
+                next => putNullVersionsToBknd(s3, bucket, key, [undefined],
                     next),
                 (versionIds, next) => putTaggingAndAssert(s3, { bucket, key,
                     tags, versionId: 'null', expectedVersionId: 'null' }, next),
                 (versionId, next) => getTaggingAndAssert(s3, { bucket, key,
                     versionId: 'null', expectedTags: tags,
                     expectedVersionId: 'null' }, next),
-                (versionId, next) => awsGetAssertTags({ key,
+                (versionId, next) => getAssertTAgs({ key,
                     expectedTags: tags }, next),
             ], done);
         });
@@ -110,9 +110,9 @@ function testSuite() {
             async.waterfall([
                 next => enableVersioning(s3, bucket, next),
                 next => s3.putObject({ Bucket: bucket, Key: key }, next),
-                (putData, next) => awsGetLatestVerId(key, '',
+                (putData, next) => getLatestVerId(key, '',
                     (err, awsVid) => next(err, putData.VersionId, awsVid)),
-                (s3Vid, awsVid, next) => putNullVersionsToAws(s3, bucket, key,
+                (s3Vid, awsVid, next) => putNullVersionsToBknd(s3, bucket, key,
                     [someBody], () => next(null, s3Vid, awsVid)),
                 (s3Vid, awsVid, next) => putTaggingAndAssert(s3, { bucket, key,
                     tags, versionId: s3Vid, expectedVersionId: s3Vid }, () =>
@@ -120,7 +120,7 @@ function testSuite() {
                 (s3Vid, awsVid, next) => getTaggingAndAssert(s3, { bucket, key,
                     versionId: s3Vid, expectedTags: tags,
                     expectedVersionId: s3Vid }, () => next(null, awsVid)),
-                (awsVid, next) => awsGetAssertTags({ key, versionId: awsVid,
+                (awsVid, next) => getAssertTAgs({ key, versionId: awsVid,
                     expectedTags: tags }, next),
             ], done);
         });
@@ -135,7 +135,7 @@ function testSuite() {
                     expectedVersionId: putData.VersionId }, next),
                 (versionId, next) => getTaggingAndAssert(s3, { bucket, key,
                     expectedTags: tags, expectedVersionId: versionId }, next),
-                (versionId, next) => awsGetAssertTags({ key,
+                (versionId, next) => getAssertTAgs({ key,
                     expectedTags: tags }, next),
             ], done);
         });
@@ -152,7 +152,7 @@ function testSuite() {
                 (versionId, next) => getTaggingAndAssert(s3, { bucket, key,
                     versionId, expectedTags: tags,
                     expectedVersionId: versionId }, next),
-                (versionId, next) => awsGetAssertTags({ key,
+                (versionId, next) => getAssertTAgs({ key,
                     expectedTags: tags }, next),
             ], done);
         });
@@ -168,7 +168,7 @@ function testSuite() {
                     expectedVersionId: putData.VersionId }, next),
                 (versionId, next) => delTaggingAndAssert(s3, { bucket, key,
                     versionId, expectedVersionId: versionId }, next),
-                next => awsGetAssertTags({ key, expectedTags: {} }, next),
+                next => getAssertTAgs({ key, expectedTags: {} }, next),
             ], done);
         });
 
@@ -178,7 +178,7 @@ function testSuite() {
             async.waterfall([
                 next => enableVersioning(s3, bucket, next),
                 next => s3.putObject({ Bucket: bucket, Key: key }, next),
-                (putData, next) => awsGetLatestVerId(key, '',
+                (putData, next) => getLatestVerId(key, '',
                     (err, awsVid) => next(err, putData.VersionId, awsVid)),
                 // put another version
                 (s3Vid, awsVid, next) => s3.putObject({ Bucket: bucket,
@@ -190,7 +190,7 @@ function testSuite() {
                 (s3Vid, awsVid, next) => getTaggingAndAssert(s3, { bucket, key,
                     versionId: s3Vid, expectedTags: tags,
                     expectedVersionId: s3Vid }, () => next(null, awsVid)),
-                (awsVid, next) => awsGetAssertTags({ key, versionId: awsVid,
+                (awsVid, next) => getAssertTAgs({ key, versionId: awsVid,
                     expectedTags: tags }, next),
             ], done);
         });
@@ -200,10 +200,10 @@ function testSuite() {
         'a specific version (null) if specified', done => {
             const key = `somekey-${Date.now()}`;
             async.waterfall([
-                next => putNullVersionsToAws(s3, bucket, key, [undefined],
+                next => putNullVersionsToBknd(s3, bucket, key, [undefined],
                     () => next()),
-                next => awsGetLatestVerId(key, '', next),
-                (awsVid, next) => putVersionsToAws(s3, bucket, key, [someBody],
+                next => getLatestVerId(key, '', next),
+                (awsVid, next) => putVersionsToBknd(s3, bucket, key, [someBody],
                     () => next(null, awsVid)),
                 (awsVid, next) => putTaggingAndAssert(s3, { bucket, key, tags,
                     versionId: 'null', expectedVersionId: 'null' },
@@ -211,7 +211,7 @@ function testSuite() {
                 (awsVid, next) => getTaggingAndAssert(s3, { bucket, key,
                     versionId: 'null', expectedTags: tags,
                     expectedVersionId: 'null' }, () => next(null, awsVid)),
-                (awsVid, next) => awsGetAssertTags({ key, versionId: awsVid,
+                (awsVid, next) => getAssertTAgs({ key, versionId: awsVid,
                     expectedTags: tags }, next),
             ], done);
         });
@@ -222,7 +222,7 @@ function testSuite() {
             const key = `somekey-${Date.now()}`;
             async.waterfall([
                 next => s3.putObject({ Bucket: bucket, Key: key }, next),
-                (putData, next) => awsGetLatestVerId(key, '', next),
+                (putData, next) => getLatestVerId(key, '', next),
                 (awsVid, next) => putTaggingAndAssert(s3, { bucket, key, tags,
                     expectedVersionId: false }, () => next(null, awsVid)),
                 (awsVid, next) => awsS3.deleteObject({ Bucket: awsBucket,
@@ -239,7 +239,7 @@ function testSuite() {
             const key = `somekey-${Date.now()}`;
             async.waterfall([
                 next => s3.putObject({ Bucket: bucket, Key: key }, next),
-                (putData, next) => awsGetLatestVerId(key, '', next),
+                (putData, next) => getLatestVerId(key, '', next),
                 (awsVid, next) => awsS3.deleteObject({ Bucket: awsBucket,
                     Key: key, VersionId: awsVid }, next),
                 (delData, next) => putTaggingAndAssert(s3, { bucket, key, tags,
@@ -254,7 +254,7 @@ function testSuite() {
             async.waterfall([
                 next => enableVersioning(s3, bucket, next),
                 next => s3.putObject({ Bucket: bucket, Key: key }, next),
-                (putData, next) => awsGetLatestVerId(key, '',
+                (putData, next) => getLatestVerId(key, '',
                     (err, awsVid) => next(err, putData.VersionId, awsVid)),
                 (s3Vid, awsVid, next) => putTaggingAndAssert(s3, { bucket, key,
                     tags, versionId: s3Vid, expectedVersionId: s3Vid },
@@ -273,7 +273,7 @@ function testSuite() {
             const key = `somekey-${Date.now()}`;
             async.waterfall([
                 next => s3.putObject({ Bucket: bucket, Key: key }, next),
-                (putData, next) => awsGetLatestVerId(key, '',
+                (putData, next) => getLatestVerId(key, '',
                     (err, awsVid) => next(err, putData.VersionId, awsVid)),
                 (s3Vid, awsVid, next) => awsS3.deleteObject({ Bucket: awsBucket,
                     Key: key, VersionId: awsVid }, err => next(err, s3Vid)),

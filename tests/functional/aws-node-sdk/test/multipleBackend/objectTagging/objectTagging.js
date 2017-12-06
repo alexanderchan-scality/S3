@@ -2,7 +2,7 @@ const assert = require('assert');
 const async = require('async');
 const withV4 = require('../../support/withV4');
 const BucketUtility = require('../../../lib/utility/bucket-util');
-const { describeSkipIfNotMultiple, awsS3, awsBucket, getAwsRetry,
+const { describeSkipIfNotMultiple, awsS3, awsBucket, getBkndRetry,
     getAzureClient, getAzureContainerName, convertMD5, memLocation,
     fileLocation, awsLocation, azureLocation } = require('../utils');
 
@@ -54,7 +54,7 @@ function getAndAssertObjectTags(tagParams, callback) {
 
 function awsGet(key, tagCheck, isEmpty, isMpu, callback) {
     process.stdout.write('Getting object from AWS\n');
-    getAwsRetry({ key }, 0, (err, res) => {
+    getBkndRetry({ key }, 0, (err, res) => {
         assert.equal(err, null);
         if (isEmpty) {
             assert.strictEqual(res.ETag, `"${emptyMD5}"`);

@@ -8,9 +8,9 @@ const {
     awsBucket,
     enableVersioning,
     suspendVersioning,
-    mapToAwsPuts,
-    putNullVersionsToAws,
-    putVersionsToAws,
+    mapToPuts,
+    putNullVersionsToBknd,
+    putVersionsToBknd,
     getAndAssertResult,
     describeSkipIfNotMultiple,
 } = require('../utils');
@@ -117,7 +117,7 @@ function testSuite() {
             const key = `somekey-${Date.now()}`;
             const data = ['data1', 'data2'];
             async.waterfall([
-                next => mapToAwsPuts(s3, bucket, key, data, err => next(err)),
+                next => mapToPuts(s3, bucket, key, data, err => next(err)),
                 // get latest version
                 next => getAndAssertResult(s3, { bucket, key, body: data[1],
                     expectedVersionId: false }, next),
@@ -193,7 +193,7 @@ function testSuite() {
                 next => s3.putObject({ Bucket: bucket, Key: key, Body: data[0],
                     Metadata: { 'scal-location-constraint': awsLocation } },
                     err => next(err)),
-                next => putVersionsToAws(s3, bucket, key, data.slice(1), next),
+                next => putVersionsToBknd(s3, bucket, key, data.slice(1), next),
                 (ids, next) => {
                     versionIds.push(...ids);
                     next();
@@ -212,7 +212,7 @@ function testSuite() {
                 next => s3.putObject({ Bucket: bucket, Key: key, Body: data[0],
                     Metadata: { 'scal-location-constraint': awsLocation } },
                     err => next(err)),
-                next => putVersionsToAws(s3, bucket, key, data.slice(1), next),
+                next => putVersionsToBknd(s3, bucket, key, data.slice(1), next),
                 (ids, next) => {
                     versionIds.push(...ids);
                     next();
@@ -241,17 +241,17 @@ function testSuite() {
             const finalDataArr = firstFiveVersions.concat([lastNullVersion])
                 .concat(secondFiveVersions);
             async.waterfall([
-                next => mapToAwsPuts(s3, bucket, key, firstThreeNullVersions,
+                next => mapToPuts(s3, bucket, key, firstThreeNullVersions,
                     err => next(err)),
-                next => putVersionsToAws(s3, bucket, key, firstFiveVersions,
+                next => putVersionsToBknd(s3, bucket, key, firstFiveVersions,
                     next),
                 (ids, next) => {
                     versionIds.push(...ids);
                     next();
                 },
-                next => putNullVersionsToAws(s3, bucket, key,
+                next => putNullVersionsToBknd(s3, bucket, key,
                     secondThreeNullVersions, err => next(err)),
-                next => putVersionsToAws(s3, bucket, key, secondFiveVersions,
+                next => putVersionsToBknd(s3, bucket, key, secondFiveVersions,
                     next),
                 (ids, next) => {
                     versionIds.push('null');
