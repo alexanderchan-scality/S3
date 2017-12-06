@@ -6,8 +6,8 @@ const constants = require('../../../../../../constants');
 const {
     awsLocation,
     enableVersioning,
-    putNullVersionsToAws,
-    putVersionsToAws,
+    putNullVersionsToBknd,
+    putVersionsToBknd,
     getAndAssertResult,
     describeSkipIfNotMultiple,
     getOwnerInfo,
@@ -189,9 +189,9 @@ function testSuite() {
         done => {
             const key = `somekey-${Date.now()}`;
             async.waterfall([
-                next => putNullVersionsToAws(s3, bucket, key, [undefined],
+                next => putNullVersionsToBknd(s3, bucket, key, [undefined],
                     err => next(err)),
-                next => putVersionsToAws(s3, bucket, key, [someBody],
+                next => putVersionsToBknd(s3, bucket, key, [someBody],
                     err => next(err)),
                 next => putObjectAcl(s3, key, 'null', testAcp, next),
                 next => getObjectAndAssertAcl(s3, { bucket, key, body: '',

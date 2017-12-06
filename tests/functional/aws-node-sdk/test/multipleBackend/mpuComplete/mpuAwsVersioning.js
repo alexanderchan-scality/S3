@@ -8,8 +8,8 @@ const {
     awsLocation,
     enableVersioning,
     suspendVersioning,
-    putToAwsBackend,
-    awsGetLatestVerId,
+    putToBackend,
+    getLatestVerId,
     getAndAssertResult,
     describeSkipIfNotMultiple,
 } = require('../utils');
@@ -127,8 +127,8 @@ function testSuite() {
         'in AWS should not be deleted', function itF(done) {
             const key = `somekey-${Date.now()}`;
             async.waterfall([
-                next => putToAwsBackend(s3, bucket, key, '', err => next(err)),
-                next => awsGetLatestVerId(key, '', next),
+                next => putToBackend(s3, bucket, key, '', err => next(err)),
+                next => getLatestVerId(key, '', next),
                 (awsVerId, next) => {
                     this.test.awsVerId = awsVerId;
                     next();
@@ -141,7 +141,7 @@ function testSuite() {
                     'null' }, next),
                 (delData, next) => getAndAssertResult(s3, { bucket, key,
                     expectedError: 'NoSuchKey' }, next),
-                next => awsGetLatestVerId(key, '', next),
+                next => getLatestVerId(key, '', next),
                 (awsVerId, next) => {
                     assert.strictEqual(awsVerId, this.test.awsVerId);
                     next();

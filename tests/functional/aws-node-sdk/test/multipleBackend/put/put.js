@@ -8,7 +8,7 @@ const { createEncryptedBucketPromise } =
     require('../../../lib/utility/createEncryptedBucket');
 const { versioningEnabled } = require('../../../lib/utility/versioning-util');
 
-const { describeSkipIfNotMultiple, getAwsRetry, awsLocation,
+const { describeSkipIfNotMultiple, getBkndRetry, awsLocation,
     awsLocationEncryption, memLocation, fileLocation } = require('../utils');
 const bucket = 'buckettestmultiplebackendput';
 const body = Buffer.from('I am a body', 'utf8');
@@ -25,7 +25,7 @@ let s3;
 const retryTimeout = 10000;
 
 function getAwsSuccess(key, awsMD5, location, cb) {
-    return getAwsRetry({ key }, 0, (err, res) => {
+    return getBkndRetry({ key }, 0, (err, res) => {
         assert.strictEqual(err, null, 'Expected success, got error ' +
         `on direct AWS call: ${err}`);
         if (location === awsLocationEncryption) {
@@ -43,7 +43,7 @@ function getAwsSuccess(key, awsMD5, location, cb) {
 }
 
 function getAwsError(key, expectedError, cb) {
-    return getAwsRetry({ key }, 0, err => {
+    return getBkndRetry({ key }, 0, err => {
         assert.notStrictEqual(err, undefined,
             'Expected error but did not find one');
         assert.strictEqual(err.code, expectedError,

@@ -11,8 +11,8 @@ const {
     awsLocation,
     enableVersioning,
     suspendVersioning,
-    putToAwsBackend,
-    awsGetLatestVerId,
+    putToBackend,
+    getLatestVerId,
     getAndAssertResult,
 } = require('../utils');
 
@@ -104,7 +104,7 @@ function copyObject(testParams, cb) {
             assert.strictEqual(data.VersionId, undefined);
         }
         const expectedBody = isEmptyObj ? '' : someBody;
-        return awsGetLatestVerId(destKey, expectedBody, (err, awsVersionId) => {
+        return getLatestVerId(destKey, expectedBody, (err, awsVersionId) => {
             Object.assign(testParams, {
                 destKey,
                 destVersionId: data.VersionId,
@@ -230,7 +230,7 @@ function testSuite() {
                     next => copyObject(testParams, next),
                     // put another version to test and make sure version id from
                     // copy was stored to get the right version
-                    next => putToAwsBackend(s3, destBucketName,
+                    next => putToBackend(s3, destBucketName,
                         testParams.destKey, wrongVersionBody, () => next()),
                     next => assertGetObjects(testParams, next),
                 ], done);
@@ -251,7 +251,7 @@ function testSuite() {
                     next => copyObject(testParams, next),
                     // put another version to test and make sure version id from
                     // copy was stored to get the right version
-                    next => putToAwsBackend(s3, destBucketName,
+                    next => putToBackend(s3, destBucketName,
                         testParams.destKey, wrongVersionBody, () => next()),
                     next => assertGetObjects(testParams, next),
                 ], done);
@@ -275,7 +275,7 @@ function testSuite() {
                     next => enableVersioning(s3, testParams.destBucket, next),
                     // put another version to test and make sure version id from
                     // copy was stored to get the right version
-                    next => putToAwsBackend(s3, destBucketName,
+                    next => putToBackend(s3, destBucketName,
                         testParams.destKey, wrongVersionBody, () => next()),
                     next => assertGetObjects(testParams, next),
                 ], done);
@@ -297,7 +297,7 @@ function testSuite() {
                     // put another version to test and make sure version id from
                     // copy was stored to get the right version
                     next => enableVersioning(s3, testParams.destBucket, next),
-                    next => putToAwsBackend(s3, destBucketName,
+                    next => putToBackend(s3, destBucketName,
                         testParams.destKey, wrongVersionBody, () => next()),
                     next => assertGetObjects(testParams, next),
                 ], done);
@@ -320,9 +320,9 @@ function testSuite() {
             };
             async.waterfall([
                 next => createBuckets(testParams, next),
-                next => putToAwsBackend(s3, testParams.destBucket, destKey,
+                next => putToBackend(s3, testParams.destBucket, destKey,
                     someBody, err => next(err)),
-                next => awsGetLatestVerId(destKey, someBody, next),
+                next => getLatestVerId(destKey, someBody, next),
                 (awsVerId, next) => {
                     this.test.awsVerId = awsVerId;
                     next();
@@ -338,7 +338,7 @@ function testSuite() {
                         'scal-location-constraint': testParams.destLocation,
                     },
                 }, next),
-                (copyResult, next) => awsGetLatestVerId(destKey, '',
+                (copyResult, next) => getLatestVerId(destKey, '',
                     (err, awsVersionId) => {
                         testParams.destKey = destKey;
                         testParams.destVersionId = copyResult.VersionId;
@@ -350,7 +350,7 @@ function testSuite() {
                 (delData, next) => getAndAssertResult(s3, { bucket:
                     testParams.destBucket, key: testParams.destKey,
                     expectedError: 'NoSuchKey' }, next),
-                next => awsGetLatestVerId(testParams.destKey, someBody, next),
+                next => getLatestVerId(testParams.destKey, someBody, next),
                 (awsVerId, next) => {
                     assert.strictEqual(awsVerId, this.test.awsVerId);
                     next();
@@ -409,7 +409,7 @@ function testSuite() {
                     next => copyObject(testParams, next),
                     // put another version to test and make sure version id
                     // from copy was stored to get the right version
-                    next => putToAwsBackend(s3, destBucketName,
+                    next => putToBackend(s3, destBucketName,
                         testParams.destKey, wrongVersionBody, () => next()),
                     next => assertGetObjects(testParams, next),
                 ], done);
