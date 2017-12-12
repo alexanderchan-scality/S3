@@ -109,5 +109,54 @@
             "bucketMatch": true,
             "azureContainerName": "s3createbucketonfly"
         }
+    },
+    "gcpbackendencryption": {
+        "type": "gcp",
+        "legacyAwsBehavior": true,
+        "details": {
+            "awsEndpoint": "storage.googleapis.com",
+            "bucketName": "zenko-gcp-bucket",
+            "mpuBucketName": "zenko-gcp-mpu",
+            "overflowName": "zenko-gcp-overflow",
+            "bucketMatch": true,
+            "credentialsProfile": "google",
+            "serverSideEncryption": true
+        }
+    },
+    "gcpbackend": {
+        "type": "gcp",
+        "legacyAwsBehavior": true,
+        "details": {
+            "awsEndpoint": "storage.googleapis.com",
+            "bucketName": "zenko-gcp-bucket",
+            "mpuBucketName": "zenko-gcp-mpu",
+            "overflowName": "zenko-gcp-overflow",
+            "bucketMatch": true,
+            "credentialsProfile": "google"
+        }
+    },
+    "gcpbackend2": {
+        "type": "gcp",
+        "legacyAwsBehavior": true,
+        "details": {
+            "awsEndpoint": "storage.googleapis.com",
+            "bucketName": "zenko-gcp-bucket",
+            "mpuBucketName": "zenko-gcp-mpu",
+            "overflowName": "zenko-gcp-overflow",
+            "bucketMatch": true,
+            "credentialsProfile": "google_2"
+        }
+    },
+    "gcpbackendmismatch": {
+        "type": "gcp",
+        "legacyAwsBehavior": true,
+        "details": {
+            "awsEndpoint": "storage.googleapis.com",
+            "bucketName": "zenko-gcp-bucket",
+            "mpuBucketName": "zenko-gcp-mpu",
+            "overflowName": "zenko-gcp-overflow",
+            "bucketMatch": false,
+            "credentialsProfile": "google"
+        }
     }
 }
