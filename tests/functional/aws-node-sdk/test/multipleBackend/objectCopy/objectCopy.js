@@ -1,6 +1,7 @@
 const assert = require('assert');
 const async = require('async');
 const AWS = require('aws-sdk');
+const GCP = require('../../../../../../lib/data/external/GCP');
 const withV4 = require('../../support/withV4');
 const BucketUtility = require('../../../lib/utility/bucket-util');
 const constants = require('../../../../../../constants');
@@ -8,9 +9,8 @@ const { config } = require('../../../../../../lib/Config');
 const { getRealAwsConfig } = require('../../support/awsConfig');
 const { createEncryptedBucketPromise } =
     require('../../../lib/utility/createEncryptedBucket');
-const { describeSkipIfNotMultiple, awsS3, memLocation, awsLocation,
-    awsLocation2, awsLocationMismatch, awsLocationEncryption } =
-    require('../utils');
+const { describeSkipIfNotMultiple, awsS3, gcpS3, memLocation, s3Locations,
+    awsLocationEncryption, withGCP } = require('../utils');
 const bucket = 'buckettestmultiplebackendobjectcopy';
 const bucketAws = 'bucketawstestmultiplebackendobjectcopy';
 const awsServerSideEncryptionbucket = 'awsserversideencryptionbucketobjectcopy';
@@ -105,8 +105,11 @@ callback) {
     });
 }
 
-describeSkipIfNotMultiple('MultipleBackend object copy: AWS',
-function testSuite() {
+describeSkipIfNotMultiple('MultipleBackend object copy: AWS/GCP',
+withGCP.call(this, function Suite(type)  {
+    const { s3Location, s3LocationEncryption, s3Location2, s3LocationMismatch }
+        = s3Locations[type];
+    const s3Client = type === 'GCP' ? gcpS3 : awsS3;
     this.timeout(250000);
     withV4(sigCfg => {
         beforeEach(() => {
@@ -124,12 +127,12 @@ function testSuite() {
             .then(() => s3.createBucketAsync({
                 Bucket: awsServerSideEncryptionbucket,
                 CreateBucketConfiguration: {
-                    LocationConstraint: awsLocationEncryption,
+                    LocationConstraint: s3LocationEncryption,
                 },
             }))
             .then(() => s3.createBucketAsync({ Bucket: bucketAws,
               CreateBucketConfiguration: {
-                  LocationConstraint: awsLocation,
+                  LocationConstraint: s3Location,
               },
             }))
             .catch(err => {
@@ -162,7 +165,7 @@ function testSuite() {
             });
         });
 
-        it('should copy an object from mem to AWS relying on ' +
+        it(`should copy an object from mem to ${type} relying on ` +
         'destination bucket location',
         done => {
             putSourceObj(memLocation, false, bucket, key => {
@@ -180,14 +183,14 @@ function testSuite() {
                     assert.strictEqual(result.CopyObjectResult.ETag,
                         `"${correctMD5}"`);
                     assertGetObjects(key, bucket, memLocation, copyKey,
-                        bucketAws, awsLocation, copyKey, 'COPY', false, awsS3,
-                        awsLocation, done);
+                        bucketAws, s3Location, copyKey, 'COPY', false, s3Client,
+                        s3Location, done);
                 });
             });
         });
 
         it('should copy an object without location contraint from mem ' +
-        'to AWS relying on destination bucket location',
+        `to ${type} relying on destination bucket location`,
         done => {
             putSourceObj(null, false, bucket, key => {
                 const copyKey = `copyKey-${Date.now()}`;
@@ -204,16 +207,16 @@ function testSuite() {
                     assert.strictEqual(result.CopyObjectResult.ETag,
                         `"${correctMD5}"`);
                     assertGetObjects(key, bucket, undefined, copyKey,
-                        bucketAws, undefined, copyKey, 'COPY', false, awsS3,
-                        awsLocation, done);
+                        bucketAws, undefined, copyKey, 'COPY', false, s3Client,
+                        s3Location, done);
                 });
             });
         });
 
-        it('should copy an object from AWS to mem relying on destination ' +
+        it(`should copy an object from ${type} to mem relying on destination ` +
         'bucket location',
         done => {
-            putSourceObj(awsLocation, false, bucketAws, key => {
+            putSourceObj(s3Location, false, bucketAws, key => {
                 const copyKey = `copyKey-${Date.now()}`;
                 const copyParams = {
                     Bucket: bucket,
@@ -227,14 +230,14 @@ function testSuite() {
                     `error: ${err}`);
                     assert.strictEqual(result.CopyObjectResult.ETag,
                         `"${correctMD5}"`);
-                    assertGetObjects(key, bucketAws, awsLocation, copyKey,
-                      bucket, memLocation, key, 'COPY', false, awsS3,
-                        awsLocation, done);
+                    assertGetObjects(key, bucketAws, s3Location, copyKey,
+                      bucket, memLocation, key, 'COPY', false, s3Client,
+                        s3Location, done);
                 });
             });
         });
 
-        it('should copy an object from mem to AWS', done => {
+        it(`should copy an object from mem to ${type}`, done => {
             putSourceObj(memLocation, false, bucket, key => {
                 const copyKey = `copyKey-${Date.now()}`;
                 const copyParams = {
@@ -243,7 +246,7 @@ function testSuite() {
                     CopySource: `/${bucket}/${key}`,
                     MetadataDirective: 'REPLACE',
                     Metadata: {
-                        'scal-location-constraint': awsLocation },
+                        'scal-location-constraint': s3Location },
                 };
                 process.stdout.write('Copying object\n');
                 s3.copyObject(copyParams, (err, result) => {
@@ -252,13 +255,13 @@ function testSuite() {
                     assert.strictEqual(result.CopyObjectResult.ETag,
                         `"${correctMD5}"`);
                     assertGetObjects(key, bucket, memLocation, copyKey, bucket,
-                        awsLocation, copyKey, 'REPLACE', false, awsS3,
-                        awsLocation, done);
+                        s3Location, copyKey, 'REPLACE', false, s3Client,
+                        s3Location, done);
                 });
             });
         });
 
-        it('should copy an object from mem to AWS with aws server side ' +
+        it(`should copy an object from mem to ${type} with aws server side ` +
         'encryption', done => {
             putSourceObj(memLocation, false, bucket, key => {
                 const copyKey = `copyKey-${Date.now()}`;
@@ -268,7 +271,7 @@ function testSuite() {
                     CopySource: `/${bucket}/${key}`,
                     MetadataDirective: 'REPLACE',
                     Metadata: {
-                        'scal-location-constraint': awsLocationEncryption },
+                        'scal-location-constraint': s3LocationEncryption },
                 };
                 process.stdout.write('Copying object\n');
                 s3.copyObject(copyParams, (err, result) => {
@@ -277,15 +280,15 @@ function testSuite() {
                     assert.strictEqual(result.CopyObjectResult.ETag,
                         `"${correctMD5}"`);
                     assertGetObjects(key, bucket, memLocation, copyKey, bucket,
-                        awsLocationEncryption, copyKey, 'REPLACE', false,
-                        awsS3, awsLocation, done);
+                        s3LocationEncryption, copyKey, 'REPLACE', false,
+                        s3Client, s3Location, done);
                 });
             });
         });
 
-        it('should copy an object from AWS to mem with encryption with ' +
+        it(`should copy an object from ${type} to mem with encryption with ` +
         'REPLACE directive but no location constraint', done => {
-            putSourceObj(awsLocation, false, bucket, key => {
+            putSourceObj(s3Location, false, bucket, key => {
                 const copyKey = `copyKey-${Date.now()}`;
                 const copyParams = {
                     Bucket: bucket,
@@ -299,16 +302,16 @@ function testSuite() {
                     `error: ${err}`);
                     assert.strictEqual(result.CopyObjectResult.ETag,
                         `"${correctMD5}"`);
-                    assertGetObjects(key, bucket, awsLocation, copyKey, bucket,
+                    assertGetObjects(key, bucket, s3Location, copyKey, bucket,
                         undefined, key, 'REPLACE', false,
-                        awsS3, awsLocation, done);
+                        s3Client, s3Location, done);
                 });
             });
         });
 
-        it('should copy an object on AWS with aws server side encryption',
+        it(`should copy an object on ${type} with aws server side encryption`,
         done => {
-            putSourceObj(awsLocation, false, bucket, key => {
+            putSourceObj(s3Location, false, bucket, key => {
                 const copyKey = `copyKey-${Date.now()}`;
                 const copyParams = {
                     Bucket: bucket,
@@ -316,7 +319,7 @@ function testSuite() {
                     CopySource: `/${bucket}/${key}`,
                     MetadataDirective: 'REPLACE',
                     Metadata: {
-                        'scal-location-constraint': awsLocationEncryption },
+                        'scal-location-constraint': s3LocationEncryption },
                 };
                 process.stdout.write('Copying object\n');
                 s3.copyObject(copyParams, (err, result) => {
@@ -324,16 +327,16 @@ function testSuite() {
                     `error: ${err}`);
                     assert.strictEqual(result.CopyObjectResult.ETag,
                         `"${correctMD5}"`);
-                    assertGetObjects(key, bucket, awsLocation, copyKey, bucket,
-                        awsLocationEncryption, copyKey, 'REPLACE', false, awsS3,
-                        awsLocation, done);
+                    assertGetObjects(key, bucket, s3Location, copyKey, bucket,
+                        s3LocationEncryption, copyKey, 'REPLACE', false,
+                        s3Client, s3Location, done);
                 });
             });
         });
 
-        it('should copy an object on AWS with aws server side ' +
+        it(`should copy an object on ${type} with aws server side ` +
         'encrypted bucket', done => {
-            putSourceObj(awsLocation, false, awsServerSideEncryptionbucket,
+            putSourceObj(s3Location, false, awsServerSideEncryptionbucket,
             key => {
                 const copyKey = `copyKey-${Date.now()}`;
                 const copyParams = {
@@ -349,14 +352,14 @@ function testSuite() {
                     assert.strictEqual(result.CopyObjectResult.ETag,
                         `"${correctMD5}"`);
                     assertGetObjects(key, awsServerSideEncryptionbucket,
-                        awsLocation, copyKey, awsServerSideEncryptionbucket,
-                        awsLocationEncryption, copyKey, 'COPY',
-                        false, awsS3, awsLocation, done);
+                        s3Location, copyKey, awsServerSideEncryptionbucket,
+                        s3LocationEncryption, copyKey, 'COPY',
+                        false, s3Client, s3Location, done);
                 });
             });
         });
 
-        it('should copy an object from mem to AWS with encryption with ' +
+        it(`should copy an object from mem to ${type} with encryption with ` +
         'REPLACE directive but no location constraint', done => {
             putSourceObj(null, false, bucket, key => {
                 const copyKey = `copyKey-${Date.now()}`;
@@ -374,15 +377,15 @@ function testSuite() {
                         `"${correctMD5}"`);
                     assertGetObjects(key, bucket, undefined, copyKey,
                         bucketAws, undefined, copyKey, 'REPLACE', false,
-                        awsS3, awsLocation, done);
+                        s3Client, s3Location, done);
                 });
             });
         });
 
-        it('should copy an object from AWS to mem with "COPY" ' +
+        it(`should copy an object from ${type} to mem with "COPY" ` +
         'directive and aws location metadata',
         done => {
-            putSourceObj(awsLocation, false, bucket, key => {
+            putSourceObj(s3Location, false, bucket, key => {
                 const copyKey = `copyKey-${Date.now()}`;
                 const copyParams = {
                     Bucket: bucket,
@@ -390,7 +393,7 @@ function testSuite() {
                     CopySource: `/${bucket}/${key}`,
                     MetadataDirective: 'COPY',
                     Metadata: {
-                        'scal-location-constraint': awsLocation },
+                        'scal-location-constraint': s3Location },
                 };
                 process.stdout.write('Copying object\n');
                 s3.copyObject(copyParams, (err, result) => {
@@ -398,22 +401,22 @@ function testSuite() {
                     `error: ${err}`);
                     assert.strictEqual(result.CopyObjectResult.ETag,
                         `"${correctMD5}"`);
-                    assertGetObjects(key, bucket, awsLocation, copyKey, bucket,
-                        memLocation, key, 'COPY', false, awsS3,
-                        awsLocation, done);
+                    assertGetObjects(key, bucket, s3Location, copyKey, bucket,
+                        memLocation, key, 'COPY', false, s3Client,
+                        s3Location, done);
                 });
             });
         });
 
-        it('should copy an object on AWS', done => {
-            putSourceObj(awsLocation, false, bucket, key => {
+        it(`should copy an object on ${type}`, done => {
+            putSourceObj(s3Location, false, bucket, key => {
                 const copyKey = `copyKey-${Date.now()}`;
                 const copyParams = {
                     Bucket: bucket,
                     Key: copyKey,
                     CopySource: `/${bucket}/${key}`,
                     MetadataDirective: 'REPLACE',
-                    Metadata: { 'scal-location-constraint': awsLocation },
+                    Metadata: { 'scal-location-constraint': s3Location },
                 };
                 process.stdout.write('Copying object\n');
                 s3.copyObject(copyParams, (err, result) => {
@@ -421,17 +424,17 @@ function testSuite() {
                     `error: ${err}`);
                     assert.strictEqual(result.CopyObjectResult.ETag,
                         `"${correctMD5}"`);
-                    assertGetObjects(key, bucket, awsLocation, copyKey, bucket,
-                        awsLocation, copyKey, 'REPLACE', false, awsS3,
-                        awsLocation, done);
+                    assertGetObjects(key, bucket, s3Location, copyKey, bucket,
+                        s3Location, copyKey, 'REPLACE', false, s3Client,
+                        s3Location, done);
                 });
             });
         });
 
-        it('should copy an object on AWS location with bucketMatch equals ' +
-        'false to a different AWS location with bucketMatch equals true',
+        it(`should copy an object on ${type} location with bucketMatch equals` +
+        ` false to a different ${type} location with bucketMatch equals true`,
         done => {
-            putSourceObj(awsLocationMismatch, false, bucket, key => {
+            putSourceObj(s3LocationMismatch, false, bucket, key => {
                 const copyKey = `copyKey-${Date.now()}`;
                 const copyParams = {
                     Bucket: bucket,
@@ -439,7 +442,7 @@ function testSuite() {
                     CopySource: `/${bucket}/${key}`,
                     MetadataDirective: 'REPLACE',
                     Metadata: {
-                        'scal-location-constraint': awsLocation },
+                        'scal-location-constraint': s3Location },
                 };
                 process.stdout.write('Copying object\n');
                 s3.copyObject(copyParams, (err, result) => {
@@ -447,27 +450,28 @@ function testSuite() {
                     `error: ${err}`);
                     assert.strictEqual(result.CopyObjectResult.ETag,
                         `"${correctMD5}"`);
-                    assertGetObjects(key, bucket, awsLocationMismatch, copyKey,
-                        bucket, awsLocation, copyKey, 'REPLACE', false, awsS3,
-                        awsLocation, done);
+                    assertGetObjects(key, bucket, s3LocationMismatch, copyKey,
+                        bucket, s3Location, copyKey, 'REPLACE', false, s3Client,
+                        s3Location, done);
                 });
             });
         });
 
-        it('should copy an object on AWS to a different AWS location ' +
+        it(`should copy an object on AWS to a different ${type} location ` +
         'with source object READ access',
         done => {
-            const awsConfig2 = getRealAwsConfig(awsLocation2);
-            const awsS3Two = new AWS.S3(awsConfig2);
+            const s3Config2 = getRealAwsConfig(s3Location2);
+            const s3ClientTwo = type === 'GCP' ?
+                new GCP(s3Config2) : new AWS.S3(s3Config2);
             const copyKey = `copyKey-${Date.now()}`;
-            const awsBucket =
-                config.locationConstraints[awsLocation].details.bucketName;
+            const s3Bucket =
+                config.locationConstraints[s3Location].details.bucketName;
             async.waterfall([
                 // giving access to the object on the AWS side
-                next => putSourceObj(awsLocation, false, bucket, key =>
+                next => putSourceObj(s3Location, false, bucket, key =>
                   next(null, key)),
-                (key, next) => awsS3.putObjectAcl(
-                  { Bucket: awsBucket, Key: key,
+                (key, next) => s3Client.putObjectAcl(
+                  { Bucket: s3Bucket, Key: key,
                   ACL: 'public-read' }, err => next(err, key)),
                 (key, next) => {
                     const copyParams = {
@@ -476,7 +480,7 @@ function testSuite() {
                         CopySource: `/${bucket}/${key}`,
                         MetadataDirective: 'REPLACE',
                         Metadata: {
-                            'scal-location-constraint': awsLocation2 },
+                            'scal-location-constraint': s3Location2 },
                     };
                     process.stdout.write('Copying object\n');
                     s3.copyObject(copyParams, (err, result) => {
@@ -488,16 +492,16 @@ function testSuite() {
                     });
                 },
                 (key, next) =>
-                assertGetObjects(key, bucket, awsLocation, copyKey,
-                  bucket, awsLocation2, copyKey, 'REPLACE', false,
-                  awsS3Two, awsLocation2, next),
+                assertGetObjects(key, bucket, s3Location, copyKey,
+                  bucket, s3Location2, copyKey, 'REPLACE', false,
+                  s3ClientTwo, s3Location2, next),
             ], done);
         });
 
-        it('should return error AccessDenied copying an object on AWS to a ' +
-        'different AWS account without source object READ access',
+        it(`should return error AccessDenied copying an object on ${type} ` +
+        `to a different ${type} account without source object READ access`,
         done => {
-            putSourceObj(awsLocation, false, bucket, key => {
+            putSourceObj(s3Location, false, bucket, key => {
                 const copyKey = `copyKey-${Date.now()}`;
                 const copyParams = {
                     Bucket: bucket,
@@ -505,7 +509,7 @@ function testSuite() {
                     CopySource: `/${bucket}/${key}`,
                     MetadataDirective: 'REPLACE',
                     Metadata: {
-                        'scal-location-constraint': awsLocation2 },
+                        'scal-location-constraint': s3Location2 },
                 };
                 process.stdout.write('Copying object\n');
                 s3.copyObject(copyParams, err => {
@@ -515,8 +519,8 @@ function testSuite() {
             });
         });
 
-        it('should copy an object on AWS with REPLACE', done => {
-            putSourceObj(awsLocation, false, bucket, key => {
+        it(`should copy an object on ${type} with REPLACE`, done => {
+            putSourceObj(s3Location, false, bucket, key => {
                 const copyKey = `copyKey-${Date.now()}`;
                 const copyParams = {
                     Bucket: bucket,
@@ -524,7 +528,7 @@ function testSuite() {
                     CopySource: `/${bucket}/${key}`,
                     MetadataDirective: 'REPLACE',
                     Metadata: {
-                        'scal-location-constraint': awsLocation },
+                        'scal-location-constraint': s3Location },
                 };
                 process.stdout.write('Copying object\n');
                 s3.copyObject(copyParams, (err, result) => {
@@ -532,14 +536,14 @@ function testSuite() {
                     `error: ${err}`);
                     assert.strictEqual(result.CopyObjectResult.ETag,
                         `"${correctMD5}"`);
-                    assertGetObjects(key, bucket, awsLocation, copyKey, bucket,
-                        awsLocation, copyKey, 'REPLACE', false, awsS3,
-                        awsLocation, done);
+                    assertGetObjects(key, bucket, s3Location, copyKey, bucket,
+                        s3Location, copyKey, 'REPLACE', false, s3Client,
+                        s3Location, done);
                 });
             });
         });
 
-        it('should copy a 0-byte object from mem to AWS', done => {
+        it(`should copy a 0-byte object from mem to ${type}`, done => {
             putSourceObj(memLocation, true, bucket, key => {
                 const copyKey = `copyKey-${Date.now()}`;
                 const copyParams = {
@@ -548,7 +552,7 @@ function testSuite() {
                     CopySource: `/${bucket}/${key}`,
                     MetadataDirective: 'REPLACE',
                     Metadata: {
-                        'scal-location-constraint': awsLocation },
+                        'scal-location-constraint': s3Location },
                 };
                 process.stdout.write('Copying object\n');
                 s3.copyObject(copyParams, (err, result) => {
@@ -557,21 +561,21 @@ function testSuite() {
                     assert.strictEqual(result.CopyObjectResult.ETag,
                         `"${emptyMD5}"`);
                     assertGetObjects(key, bucket, memLocation, copyKey, bucket,
-                        awsLocation, copyKey, 'REPLACE', true, awsS3,
-                        awsLocation, done);
+                        s3Location, copyKey, 'REPLACE', true, s3Client,
+                        s3Location, done);
                 });
             });
         });
 
-        it('should copy a 0-byte object on AWS', done => {
-            putSourceObj(awsLocation, true, bucket, key => {
+        it(`should copy a 0-byte object on ${type}`, done => {
+            putSourceObj(s3Location, true, bucket, key => {
                 const copyKey = `copyKey-${Date.now()}`;
                 const copyParams = {
                     Bucket: bucket,
                     Key: copyKey,
                     CopySource: `/${bucket}/${key}`,
                     MetadataDirective: 'REPLACE',
-                    Metadata: { 'scal-location-constraint': awsLocation },
+                    Metadata: { 'scal-location-constraint': s3Location },
                 };
                 process.stdout.write('Copying object\n');
                 s3.copyObject(copyParams, (err, result) => {
@@ -579,26 +583,26 @@ function testSuite() {
                     `error: ${err}`);
                     assert.strictEqual(result.CopyObjectResult.ETag,
                         `"${emptyMD5}"`);
-                    assertGetObjects(key, bucket, awsLocation, copyKey, bucket,
-                        awsLocation, copyKey, 'REPLACE', true, awsS3,
-                        awsLocation, done);
+                    assertGetObjects(key, bucket, s3Location, copyKey, bucket,
+                        s3Location, copyKey, 'REPLACE', true, s3Client,
+                        s3Location, done);
                 });
             });
         });
 
-        it('should return error if AWS source object has ' +
+        it(`should return error if ${type} source object has ` +
         'been deleted', done => {
-            putSourceObj(awsLocation, false, bucket, key => {
-                const awsBucket =
-                    config.locationConstraints[awsLocation].details.bucketName;
-                awsS3.deleteObject({ Bucket: awsBucket, Key: key }, err => {
+            putSourceObj(s3Location, false, bucket, key => {
+                const s3Bucket =
+                    config.locationConstraints[s3Location].details.bucketName;
+                s3Client.deleteObject({ Bucket: s3Bucket, Key: key }, err => {
                     assert.equal(err, null, 'Error deleting object from AWS: ' +
                         `${err}`);
                     const copyKey = `copyKey-${Date.now()}`;
                     const copyParams = { Bucket: bucket, Key: copyKey,
                         CopySource: `/${bucket}/${key}`,
                         MetadataDirective: 'REPLACE',
-                        Metadata: { 'scal-location-constraint': awsLocation },
+                        Metadata: { 'scal-location-constraint': s3Location },
                     };
                     process.stdout.write('Copying object\n');
                     s3.copyObject(copyParams, err => {
@@ -609,4 +613,4 @@ function testSuite() {
             });
         });
     });
-});
+}));
