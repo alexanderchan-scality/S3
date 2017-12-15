@@ -212,6 +212,10 @@
                         "streaming": true,
                         "type": "blob"
                     },
+                    "ComponentCount": {
+                        "location": "header",
+                        "locationName": "x-goog-component-count"
+                    },
                     "AcceptRanges": {
                         "location": "header",
                         "locationName": "accept-ranges"
@@ -274,10 +278,6 @@
                         "location": "header",
                         "locationName": "Expires",
                         "type": "timestamp"
-                    },
-                    "WebsiteRedirectLocation": {
-                        "location": "header",
-                        "locationName": "x-goog-website-redirect-location"
                     },
                     "Metadata": {
                         "shape": "MetadataShape",
@@ -357,6 +357,10 @@
                         "locationName": "Date",
                         "type": "timestamp"
                     }, 
+                    "ComponentCount": {
+                        "location": "header",
+                        "locationName": "x-goog-component-count"
+                    },
                     "AcceptRanges": {
                         "location": "header",
                         "locationName": "accept-ranges"
@@ -680,6 +684,130 @@
                 }
             }
         },
+        "ComposeObject": {
+            "http": {
+                "method": "PUT",
+                "requestUri": "/{Bucket}/{Key+}?compose"
+            },
+            "input": {
+                "type": "structure",
+                "required": [
+                    "Bucket",
+                    "Key"
+                ],
+                "members": {
+                    "Bucket": {
+                        "location": "uri",
+                        "locationName": "Bucket"
+                    },
+                    "Source": {
+                        "location": "header",
+                        "locationName": "x-goog-copy-source"
+                    },
+                    "Key": {
+                        "location": "uri",
+                        "locationName": "Key"
+                    },
+                    "MetadataDirective": {
+                        "location": "header",
+                        "locationName": "x-goog-metadata-directive"
+                    },
+                    "ContentDisposition": {
+                        "location": "header",
+                        "locationName": "Content-Disposition"
+                    },
+                    "Content-Encoding": {
+                        "location": "header",
+                        "locationName": "Content-Encoding"
+                    },
+                    "MultipartUpload": {
+                        "locationName": "ComposeRequest",
+                        "type": "structure",
+                        "members": {
+                            "Parts": {
+                                "locationName": "Component",
+                                "type": "list",
+                                "member": {
+                                    "type": "structure",
+                                    "members": {
+                                        "PartName": {
+                                            "locationName": "Name"
+                                        }
+                                    }
+                                },
+                                "flattened": true
+                            }
+                        }
+                    },
+                    "Metadata": {
+                        "shape": "MetadataShape",
+                        "location": "headers",
+                        "locationName": "x-goog-meta-"
+                    }
+                },
+                "payload": "MultipartUpload"
+            },
+            "output": {
+                "type": "structure",
+                "members": {
+                    "Expiration": {
+                        "location": "header",
+                        "locationName": "x-goog-expiration"
+                    },
+                    "ETag": {},
+                    "VersioId": {
+                        "location": "header",
+                        "locationName": "x-goog-generation"
+                    },
+                    "MetaVersionId": {
+                        "location": "header",
+                        "locationName": "x-goog-metageneration"
+                    }
+                }
+            }
+        },
+        "ListObjects": {
+            "http": {
+                "method": "GET",
+                "requestUri": "/{Bucket}"
+            },
+            "input": {
+                "type": "structure",
+                "required": [
+                    "Bucket"
+                ],
+                "members": {
+                    "Bucket": {
+                        "location": "uri",
+                        "locationName": "Bucket"
+                    },
+                    "Delimiter": {
+                        "location": "querystring",
+                        "locationName": "delimiter"
+                    },
+                    "KeyMarker": {
+                        "location": "querystring",
+                        "locationName": "key-marker"
+                    },
+                    "MaxKeys": {
+                        "location": "querystring",
+                        "locationName": "max-keys",
+                        "type": "integer"
+                    },
+                    "Prefix": {
+                        "location": "querystring",
+                        "locationName": "prefix"
+                    },
+                    "VersionIdMarker": {
+                        "location": "querystring",
+                        "locationName": "generation-marker"
+                    }
+                }
+            },
+            "output": {
+                "shape": "ContentsShape"
+            }
+        },
         "ListObjectVersions": {
             "http": {
                 "method": "GET",
@@ -774,6 +902,74 @@
                             "Permission": {}
                         }
                     }
+                }
+            }
+        },
+        "ContentsShape": {
+            "locationName": "ListBucketResult",
+            "type": "structure",
+            "members": {
+                "Bucket": {
+                    "locationName": "Name"
+                },
+                "Prefix": {},
+                "Delimiter": {},
+                "MaxKeys": {
+                    "type": "integer"
+                },
+                "IsTruncated": {
+                    "type": "boolean"
+                },
+                "VersionIdMarker": {
+                    "locationName": "GenerationMarker"
+                },
+                "NextVersionIdMarker": {
+                    "locationName": "NextGenerationMarker"
+                },
+                "Parts": {
+                    "locationName": "Contents",
+                    "type": "list",
+                    "member": {
+                        "type": "structure",
+                        "members": {
+                            "ETag": {},
+                            "Size": {
+                                "type": "integer"
+                            },
+                            "StorageClass": {},
+                            "Key": {},
+                            "VersionId": {
+                                "locationName": "Generation"
+                            },
+                            "MetaVersionId": {
+                                "locationName": "MetaGeneration"
+                            },
+                            "IsLatest": {
+                                "type": "boolean"
+                            },
+                            "DeletedTime": {
+                                "type": "timestamp"
+                            },
+                            "LastModified": {
+                                "type": "timestamp"
+                            },
+                            "Owner": {
+                                "shape": "OwnerShape"
+                            }
+                        }
+                    },
+                    "flattened": true
+                },
+                "CommonPrefixes": {
+                    "locationName": "CommonPrefixes",
+                    "type": "list",
+                    "member": {
+                        "type": "structure",
+                        "members": {
+                            "Prefix": {}
+                        }
+                    },
+                    "flattened": true
                 }
             }
         },
