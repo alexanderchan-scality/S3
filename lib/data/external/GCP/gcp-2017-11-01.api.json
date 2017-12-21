@@ -12,6 +12,41 @@
         "timestampFormat": "rfc822",
         "uid": "gcp-2017-11-01"
     },
-    "operations": {},
-    "shapes": {}
+    "operations": {
+        "listBuckets": {
+            "http": {
+                "method": "GET"
+            },
+            "output": {
+                "type": "structure",
+                "members": {
+                    "Buckets": {
+                        "type": "list",
+                        "member": {
+                            "locationName": "Bucket",
+                            "type": "structure",
+                            "members": {
+                                "Name": {},
+                                "CreationDate": {
+                                    "type": "timestamp"
+                                }
+                            }
+                        }
+                    },
+                    "Owner": {
+                        "shape": "OwnerShape"
+                    }
+                }
+            }
+        }
+    },
+    "shapes": {
+        "OwnerShape": {
+            "type": "structure",
+            "members": {
+                "ID": {},
+                "DisplayName": {}
+            }
+        }
+    }
 }
